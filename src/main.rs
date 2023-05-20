@@ -1,48 +1,16 @@
+use clap::Parser;
 use std::{error::Error, panic};
 
-use clap::Parser;
+pub mod args;
+pub mod gitlab;
+
 use reqwest::{
-    blocking::Client,
     header::{self, HeaderValue},
-    Error as ReqestError, StatusCode,
+    StatusCode,
 };
-use serde::Deserialize;
-
-#[derive(Debug, Parser)]
-#[command(author = "Jeremy Zelaya R. <jeremy@je12emy.com>")]
-#[command(about = "Automate cutting release branches for repositories hosted on Gitlab")]
-struct Cli {
-    private_token: String,
-    project_id: String,
-    branch: String,
-    base_branch: String,
-    target_branch: String,
-    title: String,
-    #[arg(default_value_t = String::from("https://gitlab.com"))]
-    gitlab_url: String,
-}
-
-#[derive(Debug, Deserialize)]
-struct GitlabError {
-    message: String,
-}
-
-#[derive(Debug, Deserialize)]
-struct Branch {
-    name: String,
-    web_url: String,
-}
-
-#[derive(Debug, Deserialize)]
-struct Merge_Request {
-    title: String,
-    source_branch: String,
-    target_branch: String,
-    web_url: String,
-}
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let args = Cli::parse();
+    let args = args::Cli::parse();
     println!("{:?}", args);
 
     let private_token_header: HeaderValue = args.private_token
@@ -57,7 +25,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .build()
         .expect("An error ocurred while creating the HTTP client");
 
-    let create_branch_response = create_branch(&client, &args)
+    let create_branch_response = gitlab::create_branch(&client, &args)
         .expect("An error ocurred while processing your request to create a new branch");
     match create_branch_response.status() {
         StatusCode::OK => (),
@@ -67,13 +35,13 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
         StatusCode::NOT_FOUND => {
             let json_response = create_branch_response
-                .json::<GitlabError>()
+                .json::<gitlab::GitlabError>()
                 .expect("An unkown error happened while creating your new branch!");
             panic!("Not Found error: {}", json_response.message)
         }
         StatusCode::BAD_REQUEST => {
             let json_response = create_branch_response
-                .json::<GitlabError>()
+                .json::<gitlab::GitlabError>()
                 .expect("An unkown error happened while creating your new branch!");
             panic!(
                 "A validation error ocurred while creating your new branch: {}",
@@ -87,12 +55,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     let new_branch = create_branch_response
-        .json::<Branch>()
+        .json::<gitlab::Branch>()
         .expect("An error ocurred while reading the response");
     println!("New branch {} created!", new_branch.name);
     println!("URL: {}", new_branch.web_url);
 
-    let create_pr_response = create_pr(&client, &args)
+    let create_pr_response = gitlab::create_pr(&client, &args)
         .expect("An error ocurred while processing your request to create a merge request");
     match create_pr_response.status() {
         StatusCode::OK => (),
@@ -102,13 +70,13 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
         StatusCode::NOT_FOUND => {
             let json_response = create_pr_response
-                .json::<GitlabError>()
+                .json::<gitlab::GitlabError>()
                 .expect("An unkown error happened while creating your new merge request!");
             panic!("Not Found error: {}", json_response.message)
         }
         StatusCode::BAD_REQUEST => {
             let json_response = create_pr_response
-                .json::<GitlabError>()
+                .json::<gitlab::GitlabError>()
                 .expect("An unkown error happened while creating your new merge request!");
             panic!(
                 "A validation error ocurred while creating your new merge request: {}",
@@ -122,26 +90,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     let new_pr = create_pr_response
-        .json::<Merge_Request>()
+        .json::<gitlab::MergeRequest>()
         .expect("An error ocurred while reading the merge request response");
     println!("New pull request \"{}\" created!", new_pr.title);
     println!("URL: {}", new_pr.web_url);
 
     return Ok(());
-}
-
-fn create_branch(client: &Client, args: &Cli) -> Result<reqwest::blocking::Response, ReqestError> {
-    let create_branch_endpoint = format!(
-        "{}/api/v4/projects/{}/repository/branches?branch={}&ref={}",
-        args.gitlab_url, args.project_id, args.branch, args.base_branch
-    );
-    client.post(create_branch_endpoint).send()
-}
-
-fn create_pr(client: &Client, args: &Cli) -> Result<reqwest::blocking::Response, ReqestError> {
-    let create_pr_endpoint = format!(
-        "{}/api/v4/projects/{}/merge_requests?source_branch={}&target_branch={}&title={}",
-        args.gitlab_url, args.project_id, args.branch, args.target_branch, args.title
-    );
-    client.post(create_pr_endpoint).send()
 }
