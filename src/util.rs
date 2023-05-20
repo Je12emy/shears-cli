@@ -1,10 +1,14 @@
 use crate::gitlab;
 use reqwest::{blocking::Response, StatusCode};
+use serde::de::DeserializeOwned;
 
-pub fn handle_response_status(status: StatusCode, resource: String, response: &Response) {
+pub fn handle_response_status<T>(status: StatusCode, resource: String, response: Response) -> T
+where
+    T: DeserializeOwned,
+{
     match status {
-        StatusCode::OK => (),
-        StatusCode::CREATED => (),
+        StatusCode::OK => parse_response::<T>(response, resource),
+        StatusCode::CREATED => parse_response::<T>(response, resource),
         StatusCode::UNAUTHORIZED => {
             panic!("Unauthorized, please make sure your personal access token is correct!")
         }
@@ -39,4 +43,18 @@ pub fn handle_response_status(status: StatusCode, resource: String, response: &R
             resource
         ),
     }
+}
+
+fn parse_response<T>(response: Response, resource: String) -> T
+where
+    T: DeserializeOwned,
+{
+    let new_entity = response.json::<T>().expect(
+        format!(
+            "An error ocurred while reading the response to create a {}",
+            resource
+        )
+        .as_str(),
+    );
+    return new_entity;
 }
