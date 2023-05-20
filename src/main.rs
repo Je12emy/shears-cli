@@ -13,11 +13,13 @@ struct Cli {
     base_branch: String,
     target_branch: String,
     title: String,
+    #[arg(default_value_t = String::from("https://gitlab.com"))]
+    gitlab_url: String,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args = Cli::parse();
-
+    println!("{:?}", args);
     let mut headers = header::HeaderMap::new();
     headers.insert("PRIVATE-TOKEN", args.private_token.parse().unwrap());
 
@@ -37,19 +39,16 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 fn create_branch(client: &Client, args: &Cli) -> Result<reqwest::blocking::Response, ReqestError> {
     let create_branch_endpoint = format!(
-        "https://gitlab.com/api/v4/projects/{}/repository/branches?branch={}&ref={}",
-        args.project_id, args.branch, args.base_branch
+        "{}/api/v4/projects/{}/repository/branches?branch={}&ref={}",
+        args.gitlab_url, args.project_id, args.branch, args.base_branch
     );
     client.post(create_branch_endpoint).send()
 }
 
 fn create_pr(client: &Client, args: &Cli) -> Result<reqwest::blocking::Response, ReqestError> {
     let create_pr_endpoint = format!(
-        "https://gitlab.com/api/v4/projects/{}/merge_requests?source_branch={}&target_branch={}&title={}",
-        args.project_id,
-        args.branch,
-        args.target_branch,
-        args.title
+        "{}/api/v4/projects/{}/merge_requests?source_branch={}&target_branch={}&title={}",
+        args.gitlab_url, args.project_id, args.branch, args.target_branch, args.title
     );
     client.post(create_pr_endpoint).send()
 }
