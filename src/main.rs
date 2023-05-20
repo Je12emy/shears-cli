@@ -6,6 +6,7 @@ use reqwest::{
     header::{self, HeaderValue},
     Error as ReqestError, StatusCode,
 };
+use serde::Deserialize;
 
 #[derive(Debug, Parser)]
 #[command(author = "Jeremy Zelaya R. <jeremy@je12emy.com>")]
@@ -19,6 +20,11 @@ struct Cli {
     title: String,
     #[arg(default_value_t = String::from("https://gitlab.com"))]
     gitlab_url: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct GitlabError {
+    message: String,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -45,7 +51,13 @@ fn main() -> Result<(), Box<dyn Error>> {
             println!("New branch created succesfully")
         }
         StatusCode::BAD_REQUEST => {
-            panic!("A validation error ocurred while creating your new branch!");
+            let json_response = create_branch_response
+                .json::<GitlabError>()
+                .expect("An unkown error happened while creating your new branch!");
+            panic!(
+                "A validation error ocurred while creating your new branch: {}",
+                json_response.message
+            );
         }
         _ => panic!("An unexpected error ocurred while creating your new branch"),
     }
