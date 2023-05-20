@@ -4,7 +4,7 @@ use clap::Parser;
 use reqwest::{
     blocking::Client,
     header::{self, HeaderValue},
-    Error as ReqestError,
+    Error as ReqestError, StatusCode,
 };
 
 #[derive(Debug, Parser)]
@@ -37,8 +37,23 @@ fn main() -> Result<(), Box<dyn Error>> {
         .build()
         .expect("An error ocurred while creating the HTTP client");
 
-    let response = create_branch(&client, &args).unwrap();
-    println!("Branch res text: {:?}", response.text().unwrap());
+    let create_branch_response = create_branch(&client, &args)
+        .expect("An error ocurred while processing your request to create a new branch");
+
+    match create_branch_response.status() {
+        StatusCode::OK => {
+            println!("New branch created succesfully")
+        }
+        StatusCode::BAD_REQUEST => {
+            panic!("A validation error ocurred while creating your new branch!");
+        }
+        _ => panic!("An unexpected error ocurred while creating your new branch"),
+    }
+
+    println!(
+        "Branch res text: {:?}",
+        create_branch_response.text().unwrap()
+    );
 
     let response = create_pr(&client, &args).unwrap();
     println!("PR res text: {:?}", response.text().unwrap());
