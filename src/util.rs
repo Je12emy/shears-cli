@@ -1,0 +1,42 @@
+use crate::gitlab;
+use reqwest::{blocking::Response, StatusCode};
+
+pub fn handle_response_status(status: StatusCode, resource: String, response: &Response) {
+    match status {
+        StatusCode::OK => (),
+        StatusCode::CREATED => (),
+        StatusCode::UNAUTHORIZED => {
+            panic!("Unauthorized, please make sure your personal access token is correct!")
+        }
+        StatusCode::NOT_FOUND => {
+            let json_response = response.json::<gitlab::GitlabError>().expect(
+                format!(
+                    "An unkown error happened while creating your new {}!",
+                    resource
+                )
+                .as_str(),
+            );
+            panic!("Not Found error: {}", json_response.message)
+        }
+        StatusCode::BAD_REQUEST => {
+            let json_response = response.json::<gitlab::GitlabError>().expect(
+                format!(
+                    "An unkown error happened while creating your new {}!",
+                    resource
+                )
+                .as_str(),
+            );
+            panic!(
+                "A validation error ocurred while creating your new {}: {}",
+                resource, json_response.message
+            );
+        }
+        StatusCode::INTERNAL_SERVER_ERROR => {
+            panic!("Internal server error, please contact Gitlab if you see this");
+        }
+        _ => panic!(
+            "An unexpected error ocurred while creating your {}",
+            resource
+        ),
+    }
+}
