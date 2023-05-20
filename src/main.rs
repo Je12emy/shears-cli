@@ -1,4 +1,7 @@
-#[derive(Debug)]
+use clap::Parser;
+
+#[allow(unused)]
+#[derive(Debug, Parser)]
 struct Cli {
     private_token: String,
     project_id: String,
@@ -8,5 +11,6 @@ struct Cli {
 }
 
 fn main() {
-    println!("Hello, world!");
+    let args = Cli::parse();
+    println!("{:?}", args);
 }
