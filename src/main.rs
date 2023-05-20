@@ -27,6 +27,12 @@ struct GitlabError {
     message: String,
 }
 
+#[derive(Debug, Deserialize)]
+struct Branch {
+    name: String,
+    web_url: String,
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
     let args = Cli::parse();
     println!("{:?}", args);
@@ -47,8 +53,16 @@ fn main() -> Result<(), Box<dyn Error>> {
         .expect("An error ocurred while processing your request to create a new branch");
 
     match create_branch_response.status() {
-        StatusCode::OK => {
-            println!("New branch created succesfully")
+        StatusCode::OK => (),
+        StatusCode::CREATED => (),
+        StatusCode::UNAUTHORIZED => {
+            panic!("Unauthorized, please make sure your personal access token is correct!")
+        }
+        StatusCode::NOT_FOUND => {
+            let json_response = create_branch_response
+                .json::<GitlabError>()
+                .expect("An unkown error happened while creating your new branch!");
+            panic!("Not Found error: {}", json_response.message)
         }
         StatusCode::BAD_REQUEST => {
             let json_response = create_branch_response
@@ -59,13 +73,17 @@ fn main() -> Result<(), Box<dyn Error>> {
                 json_response.message
             );
         }
+        StatusCode::INTERNAL_SERVER_ERROR => {
+            panic!("Internal server error, please contact Gitlab if you see this");
+        }
         _ => panic!("An unexpected error ocurred while creating your new branch"),
     }
 
-    println!(
-        "Branch res text: {:?}",
-        create_branch_response.text().unwrap()
-    );
+    let new_branch = create_branch_response
+        .json::<Branch>()
+        .expect("An error ocurred while reading the response");
+    println!("New branch {} created!", new_branch.name);
+    println!("URL: {}", new_branch.web_url);
 
     let response = create_pr(&client, &args).unwrap();
     println!("PR res text: {:?}", response.text().unwrap());
