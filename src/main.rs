@@ -1,4 +1,4 @@
-use std::error::Error;
+use std::{error::Error, panic};
 
 use clap::Parser;
 use reqwest::{
@@ -33,6 +33,14 @@ struct Branch {
     web_url: String,
 }
 
+#[derive(Debug, Deserialize)]
+struct Merge_Request {
+    title: String,
+    source_branch: String,
+    target_branch: String,
+    web_url: String,
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
     let args = Cli::parse();
     println!("{:?}", args);
@@ -51,7 +59,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let create_branch_response = create_branch(&client, &args)
         .expect("An error ocurred while processing your request to create a new branch");
-
     match create_branch_response.status() {
         StatusCode::OK => (),
         StatusCode::CREATED => (),
@@ -85,8 +92,40 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("New branch {} created!", new_branch.name);
     println!("URL: {}", new_branch.web_url);
 
-    let response = create_pr(&client, &args).unwrap();
-    println!("PR res text: {:?}", response.text().unwrap());
+    let create_pr_response = create_pr(&client, &args)
+        .expect("An error ocurred while processing your request to create a merge request");
+    match create_pr_response.status() {
+        StatusCode::OK => (),
+        StatusCode::CREATED => (),
+        StatusCode::UNAUTHORIZED => {
+            panic!("Unauthorized, please make sure your personal access token is correct!")
+        }
+        StatusCode::NOT_FOUND => {
+            let json_response = create_pr_response
+                .json::<GitlabError>()
+                .expect("An unkown error happened while creating your new merge request!");
+            panic!("Not Found error: {}", json_response.message)
+        }
+        StatusCode::BAD_REQUEST => {
+            let json_response = create_pr_response
+                .json::<GitlabError>()
+                .expect("An unkown error happened while creating your new merge request!");
+            panic!(
+                "A validation error ocurred while creating your new merge request: {}",
+                json_response.message
+            );
+        }
+        StatusCode::INTERNAL_SERVER_ERROR => {
+            panic!("Internal server error, please contact Gitlab if you see this");
+        }
+        _ => panic!("An unexpected error ocurred while creating your merge request"),
+    }
+
+    let new_pr = create_pr_response
+        .json::<Merge_Request>()
+        .expect("An error ocurred while reading the merge request response");
+    println!("New pull request \"{}\" created!", new_pr.title);
+    println!("URL: {}", new_pr.web_url);
 
     return Ok(());
 }
