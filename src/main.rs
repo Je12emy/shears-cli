@@ -1,7 +1,11 @@
 use std::error::Error;
 
 use clap::Parser;
-use reqwest::{blocking::Client, header, Error as ReqestError};
+use reqwest::{
+    blocking::Client,
+    header::{self, HeaderValue},
+    Error as ReqestError,
+};
 
 #[derive(Debug, Parser)]
 #[command(author = "Jeremy Zelaya R. <jeremy@je12emy.com>")]
@@ -20,13 +24,18 @@ struct Cli {
 fn main() -> Result<(), Box<dyn Error>> {
     let args = Cli::parse();
     println!("{:?}", args);
+
+    let private_token_header: HeaderValue = args.private_token
+        .clone()
+        .try_into()
+        .expect("An error ocurred while creating the request headers, please make sure your ACCESS_TOKEN is correct");
     let mut headers = header::HeaderMap::new();
-    headers.insert("PRIVATE-TOKEN", args.private_token.parse().unwrap());
+    headers.insert("PRIVATE-TOKEN", private_token_header);
 
     let client = reqwest::blocking::Client::builder()
         .default_headers(headers)
         .build()
-        .unwrap();
+        .expect("An error ocurred while creating the HTTP client");
 
     let response = create_branch(&client, &args).unwrap();
     println!("Branch res text: {:?}", response.text().unwrap());
