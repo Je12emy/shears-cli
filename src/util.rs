@@ -23,16 +23,18 @@ where
             panic!("Not Found error: {}", json_response.message)
         }
         StatusCode::BAD_REQUEST => {
-            let json_response = response.json::<gitlab::GitlabError>().expect(
-                format!(
-                    "An unkown error happened while creating your new {}!",
-                    resource
-                )
-                .as_str(),
-            );
+            let text = response.text().unwrap();
+            println!("text: {}", text);
+            // let json_response = response.json().expect(
+            //     format!(
+            //         "An unkown error happened while creating your new {}!",
+            //         resource
+            //     )
+            //     .as_str(),
+            // );
             panic!(
-                "A validation error ocurred while creating your new {}: {}",
-                resource, json_response.message
+                "A validation error ocurred while creating your new {}",
+                resource
             );
         }
         StatusCode::INTERNAL_SERVER_ERROR => {

@@ -1,5 +1,6 @@
 use clap::Parser;
-use std::error::Error;
+use directories::ProjectDirs;
+use std::{error::Error, fs};
 
 pub mod args;
 pub mod gitlab;
@@ -8,9 +9,27 @@ pub mod util;
 use reqwest::header::{self, HeaderValue};
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let args = args::Cli::parse();
+    let config: args::Config;
+    let passed_arguments = std::env::args().count() > 1;
+    if !passed_arguments {
+        let project_dir = ProjectDirs::from("com", "je12emy", "shears-cli").unwrap();
+        let config_dir = project_dir.config_dir();
+        let config_file = fs::read_to_string(config_dir.join("config.toml")).unwrap();
+        config = toml::from_str(&config_file).unwrap();
+    } else {
+        let args = args::Cli::parse();
+        config = args::Config {
+            private_token: args.private_token,
+            gitlab_url: args.gitlab_url.clone(),
+            projects: vec![args::Project {
+                project_id: args.project_id,
+                base_branch: args.base_branch,
+                target_branch: args.target_branch,
+            }],
+        };
+    }
 
-    let private_token_header: HeaderValue = args.private_token
+    let private_token_header: HeaderValue = config.private_token
         .clone()
         .try_into()
         .expect("An error ocurred while creating the request headers, please make sure your ACCESS_TOKEN is correct");
@@ -22,25 +41,45 @@ fn main() -> Result<(), Box<dyn Error>> {
         .build()
         .expect("An error ocurred while creating the HTTP client");
 
-    let create_branch_response = gitlab::create_branch(&client, &args)
-        .expect("An error ocurred while processing your request to create a new branch");
-    let new_branch = util::handle_response_status::<gitlab::Branch>(
-        create_branch_response.status(),
-        String::from("branch"),
-        create_branch_response,
-    );
-    println!("New branch {} created!", new_branch.name);
-    println!("URL: {}", new_branch.web_url);
+    let gitlab_url = config.gitlab_url.clone();
+    let new_branch_name = String::from("release/1.0.12");
+    for project in config.projects {
+        let create_branch_arguments = gitlab::CreateBranch {
+            gitlab_url: &gitlab_url,
+            project_id: &project.project_id,
+            branch: &new_branch_name,
+            source_branch: &project.base_branch,
+        };
+        let create_branch_response = gitlab::create_branch(&client, &create_branch_arguments)
+            .expect("An error ocurred while processing your request to create a new branch");
+        let new_branch = util::handle_response_status::<gitlab::Branch>(
+            create_branch_response.status(),
+            String::from("branch"),
+            create_branch_response,
+        );
+        println!("New branch {} created!", new_branch.name);
+        println!("URL: {}", new_branch.web_url);
 
-    let create_pr_response = gitlab::create_pr(&client, &args)
-        .expect("An error ocurred while processing your request to create a merge request");
-    let new_pr = util::handle_response_status::<gitlab::MergeRequest>(
-        create_pr_response.status(),
-        String::from("merge request"),
-        create_pr_response,
-    );
-    println!("New pull request \"{}\" created!", new_pr.title);
-    println!("URL: {}", new_pr.web_url);
+        let create_pr_arguments = gitlab::CreatePR {
+            gitlab_url: &gitlab_url,
+            project_id: &project.project_id,
+            source_branch: &new_branch_name,
+            target_branch: &project.target_branch,
+            title: "new 1.0.12 release",
+        };
+        let create_pr_response = gitlab::create_pr(&client, &create_pr_arguments)
+            .expect("An error ocurred while processing your request to create a merge request");
+        let new_pr = util::handle_response_status::<gitlab::MergeRequest>(
+            create_pr_response.status(),
+            String::from("merge request"),
+            create_pr_response,
+        );
+        println!(
+            "New pull request for branch: \"{}\" created!",
+            new_branch.name
+        );
+        println!("URL: {}", new_pr.web_url);
+    }
 
     return Ok(());
 }
