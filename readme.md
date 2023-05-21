@@ -27,7 +27,7 @@ Simply invoke the CLI and pass the following arguments.
 Here's an example:
 
 ```bash
-$ shears-cli -t glpat-dKnH2Q8A59cnucaDbDfR -i 46177309 -s main -d main
+$ shears-cli -t glpat-xxxxxxxxxxxxxxxxxxxx -i 11111111 -s develop -d main
 
 Please enter a branch name: release/1.1.2
 New branch release/1.1.2 created!
