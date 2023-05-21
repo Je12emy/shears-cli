@@ -2,7 +2,7 @@
 
 Shears is a CLI which aims to automate cutting release branches for repositories hosted on Gitlab.
 
-![Landing Image](./assets/shears_landing.png)
+![Landing Image](./assets/shears_landing.jpg)
 
 ## Requirements
 
