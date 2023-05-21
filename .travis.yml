@@ -1,0 +1,18 @@
+- name: Linux Binary
+    env: TARGET=x86_64-unknown-linux-musl
+    rust: nightly
+    before_script: rustup target add $TARGET
+    script: cargo build --release --target $TARGET --locked --features vendored-openssl
+    addons:
+      apt:
+        packages:
+          - musl-tools
+    <<: *DEPLOY_TO_GITHUB
+
+- name: macOS Binary
+  env: MACOSX_DEPLOYMENT_TARGET=10.7 TARGET=x86_64-apple-darwin
+  os: osx
+  rust: nightly
+  script: cargo build --release --target $TARGET --locked
+  install: true
+  <<: *DEPLOY_TO_GITHUB
