@@ -1,4 +1,7 @@
-use std::{error::Error, io};
+use std::{
+    error::Error,
+    io::{self, Write},
+};
 
 pub mod args;
 pub mod gitlab;
@@ -23,7 +26,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let gitlab_url = config.gitlab_url.clone();
 
-    println!("Please enter a branch name: ");
+    print!("Please enter a branch name: ");
+    let _ = io::stdout().flush();
     let mut new_branch_name = String::new();
     io::stdin().read_line(&mut new_branch_name).unwrap();
 
@@ -44,10 +48,12 @@ fn main() -> Result<(), Box<dyn Error>> {
         println!("New branch {} created!", new_branch.name);
         println!("URL: {}", new_branch.web_url);
 
-        println!(
-            "Please enter a PR title for branch: \"{}\"",
+        print!(
+            "Please enter a PR title for branch \"{}\": ",
             new_branch.name,
         );
+        let _ = io::stdout().flush();
+
         let mut new_pr_title = String::new();
         io::stdin().read_line(&mut new_pr_title).unwrap();
 

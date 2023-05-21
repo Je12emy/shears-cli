@@ -42,7 +42,6 @@ pub fn create_pr(client: &Client, args: &CreatePR) -> Result<reqwest::blocking::
         "{}/api/v4/projects/{}/merge_requests?source_branch={}&target_branch={}&title={}",
         args.gitlab_url, args.project_id, args.source_branch, args.target_branch, args.title
     );
-    println!("{}", create_pr_endpoint);
     client.post(create_pr_endpoint).send()
 }
 
