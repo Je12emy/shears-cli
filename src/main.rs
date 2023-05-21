@@ -1,6 +1,4 @@
-use clap::Parser;
-use directories::ProjectDirs;
-use std::{error::Error, fs};
+use std::{error::Error, io};
 
 pub mod args;
 pub mod gitlab;
@@ -24,7 +22,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         .expect("An error ocurred while creating the HTTP client");
 
     let gitlab_url = config.gitlab_url.clone();
-    let new_branch_name = String::from("release/1.0.12");
+
+    println!("Please enter a branch name: ");
+    let mut new_branch_name = String::new();
+    io::stdin().read_line(&mut new_branch_name).unwrap();
+
     for project in config.projects {
         let create_branch_arguments = gitlab::CreateBranch {
             gitlab_url: &gitlab_url,
@@ -42,12 +44,19 @@ fn main() -> Result<(), Box<dyn Error>> {
         println!("New branch {} created!", new_branch.name);
         println!("URL: {}", new_branch.web_url);
 
+        println!(
+            "Please enter a PR title for branch: \"{}\"",
+            new_branch.name,
+        );
+        let mut new_pr_title = String::new();
+        io::stdin().read_line(&mut new_pr_title).unwrap();
+
         let create_pr_arguments = gitlab::CreatePR {
             gitlab_url: &gitlab_url,
             project_id: &project.project_id,
             source_branch: &new_branch_name,
             target_branch: &project.target_branch,
-            title: "new 1.0.12 release",
+            title: &new_pr_title,
         };
         let create_pr_response = gitlab::create_pr(&client, &create_pr_arguments)
             .expect("An error ocurred while processing your request to create a merge request");
