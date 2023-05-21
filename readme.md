@@ -89,3 +89,9 @@ Check the [releases](https://github.com/Je12emy/shears-cli/releases) page and do
 ## Building from Source
 
 This CLI is built using [rust](https://www.rust-lang.org/), so you can run it on build it using cargo.
+
+# Contributing
+
+Feel free to open any pull request with improvements, suggestions or feature ideas.
+
+![Meme](./assets/automation-meme.jpg)
