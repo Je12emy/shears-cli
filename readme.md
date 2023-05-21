@@ -22,7 +22,7 @@ Simply invoke the CLI and pass the following arguments.
 | Project ID    | Your repository's ID, you may need write permissions on it. You may retrieve this ID on your [project's settings page](https://docs.gitlab.com/ee/user/project/settings/#view-project-settings) | i          | id        |
 | Source Branch | The base branch used for creating the new release branch, when creating a PR this branch will be merged into the target branch                                                                  | s          | source    |
 | Target Branch | The target branch for the new release pull request                                                                                                                                              | t          | target    |
-| Gitlab URL    | The Gitlab URL, by default https://gitlab.com is used. If you are hosting your own Gitlab instance you will need to pass this argument                                                          | u          | url       |
+| Gitlab URL (Optional)    | The Gitlab URL, by default https://gitlab.com is used. If you are hosting your own Gitlab instance you will need to pass this argument                                                          | u          | url       |
 
 Here's an example:
 
