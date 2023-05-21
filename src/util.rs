@@ -60,3 +60,28 @@ where
     );
     return new_entity;
 }
+
+pub fn build_config() -> args::Config {
+    let config: args::Config;
+    let user_passed_arguments = std::env::args().count() > 1;
+
+    if user_passed_arguments {
+        let args = args::Cli::parse();
+        config = args::Config {
+            private_token: args.private_token,
+            gitlab_url: args.gitlab_url.clone(),
+            projects: vec![args::Project {
+                project_id: args.project_id,
+                base_branch: args.base_branch,
+                target_branch: args.target_branch,
+            }],
+        };
+        return config;
+    }
+
+    let project_dir = ProjectDirs::from("com", "je12emy", "shears-cli").unwrap();
+    let config_dir = project_dir.config_dir();
+    let config_file = fs::read_to_string(config_dir.join("config.toml")).unwrap();
+    config = toml::from_str(&config_file).unwrap();
+    return config;
+}
