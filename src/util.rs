@@ -27,18 +27,16 @@ where
             panic!("Not Found error: {}", json_response.message)
         }
         StatusCode::BAD_REQUEST => {
-            let text = response.text().unwrap();
-            println!("text: {}", text);
-            // let json_response = response.json().expect(
-            //     format!(
-            //         "An unkown error happened while creating your new {}!",
-            //         resource
-            //     )
-            //     .as_str(),
-            // );
+            let json_response = response.json::<gitlab::GitlabError>().expect(
+                format!(
+                    "An unkown error happened while creating your new {}!",
+                    resource
+                )
+                .as_str(),
+            );
             panic!(
-                "A validation error ocurred while creating your new {}",
-                resource
+                "A validation error ocurred while creating your new {}: {}",
+                resource, json_response.message
             );
         }
         StatusCode::INTERNAL_SERVER_ERROR => {
@@ -83,9 +81,13 @@ pub fn build_config() -> args::Config {
         return config;
     }
 
-    let project_dir = ProjectDirs::from("com", "je12emy", "shears-cli").unwrap();
+    let project_dir = ProjectDirs::from("com", "je12emy", "shears-cli")
+        .expect("Unable to locate a configuration directory");
     let config_dir = project_dir.config_dir();
-    let config_file = fs::read_to_string(config_dir.join("config.toml")).unwrap();
-    config = toml::from_str(&config_file).unwrap();
+    let config_file =
+        fs::read_to_string(config_dir.join("config.toml")).expect("Unable to locate config.toml");
+    config = toml::from_str(&config_file).expect(
+        "Unable to read config.toml, please make sure you have a valid configuration file syntax",
+    );
     return config;
 }
