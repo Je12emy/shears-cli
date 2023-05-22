@@ -66,7 +66,7 @@ base_branch = "develop"
 target_branch = "main"
 ```
 
-Here the `projects` key allows you to set-up many repositories, shears will then create a branch for each and submit a PR for you on each project.
+Here the `projects` key allows you to set-up many repositories, shears will then create a branch and submit a PR for you on each project.
 
 With this set-up you can simply call shears, and the configuration file will be read. Here's an example:
 
@@ -88,7 +88,7 @@ Check the [releases](https://github.com/Je12emy/shears-cli/releases) page and do
 
 ## Building from Source
 
-This CLI is built using [rust](https://www.rust-lang.org/), so you can run build and run it using cargo.
+This CLI is built using [rust](https://www.rust-lang.org/), so you can build and run it using cargo.
 
 # Contributing
 
