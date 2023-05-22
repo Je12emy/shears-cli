@@ -41,7 +41,7 @@ Notice that you are asked for a branch name and a title for your PR.
 
 ## Using a  configuration file
 
-If you don't want to use the same command multiple times, don't want to type that many arguments or even better, you wan to cut multiple release branches, then this is a great alternative. You will need a configuration file named: "config.toml" written in TOML, with the settings we discussed earlier. This configuration file should be placed in the following directories depending on your OS.
+If you don't want to use the same command multiple times, don't want to type that many arguments or even better, you want to cut multiple release branches, then this is a great alternative. You will need a configuration file named: "config.toml" written in TOML, with the settings we discussed earlier. This configuration file should be placed in the following directories depending on your OS.
 
 | OS      | Path                                                          |
 | ------- | ------------------------------------------------------------- |
@@ -66,7 +66,7 @@ base_branch = "develop"
 target_branch = "main"
 ```
 
-Here the `projects` key allows you to set-up many repositories, shears create a release branch and release PR for you on each project.
+Here the `projects` key allows you to set-up many repositories, shears will then create a branch for each and submit a PR for you on each project.
 
 With this set-up you can simply call shears, and the configuration file will be read. Here's an example:
 
@@ -88,7 +88,7 @@ Check the [releases](https://github.com/Je12emy/shears-cli/releases) page and do
 
 ## Building from Source
 
-This CLI is built using [rust](https://www.rust-lang.org/), so you can run it on build it using cargo.
+This CLI is built using [rust](https://www.rust-lang.org/), so you can run build and run it using cargo.
 
 # Contributing
 
