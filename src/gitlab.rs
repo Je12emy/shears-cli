@@ -1,6 +1,6 @@
-use serde::Deserialize;
-
+use anyhow::Result;
 use reqwest::{blocking::Client, Error};
+use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
 pub struct GitlabError {

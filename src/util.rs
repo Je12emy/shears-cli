@@ -1,6 +1,7 @@
 use std::fs;
 
-use crate::{args, HttpRequestError, ShearsError};
+use crate::{args, HttpError, ShearsError};
+use anyhow::Result;
 use clap::Parser;
 use directories::ProjectDirs;
 use reqwest::StatusCode;
@@ -9,13 +10,11 @@ pub fn handle_response_status(status: StatusCode) -> Result<(), ShearsError> {
     match status {
         StatusCode::OK => Ok(()),
         StatusCode::CREATED => Ok(()),
-        StatusCode::UNAUTHORIZED => Err(ShearsError::HTTPRequestError(HttpRequestError::Auth)),
-        StatusCode::NOT_FOUND => Err(ShearsError::HTTPRequestError(HttpRequestError::NotFound)),
-        StatusCode::BAD_REQUEST => Err(ShearsError::HTTPRequestError(HttpRequestError::Unexpected)),
-        StatusCode::INTERNAL_SERVER_ERROR => {
-            Err(ShearsError::HTTPRequestError(HttpRequestError::Server))
-        }
-        _ => Err(ShearsError::HTTPRequestError(HttpRequestError::Unexpected)),
+        StatusCode::UNAUTHORIZED => Err(ShearsError::HTTPError(HttpError::Auth)),
+        StatusCode::NOT_FOUND => Err(ShearsError::HTTPError(HttpError::NotFound)),
+        StatusCode::BAD_REQUEST => Err(ShearsError::HTTPError(HttpError::Unexpected)),
+        StatusCode::INTERNAL_SERVER_ERROR => Err(ShearsError::HTTPError(HttpError::Server)),
+        _ => Err(ShearsError::HTTPError(HttpError::Unexpected)),
     }
 }
 
@@ -45,5 +44,5 @@ pub fn build_config() -> args::Config {
     config = toml::from_str(&config_file).expect(
         "Unable to read config.toml, please make sure you have a valid configuration file syntax",
     );
-    return config;
+    config
 }
