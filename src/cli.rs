@@ -48,6 +48,7 @@ pub enum HttpError {
     Auth,
     NotFound,
     Server,
+    BadRequest,
     Unexpected,
 }
 
@@ -61,6 +62,7 @@ impl Display for HttpError {
             HttpError::NotFound => writeln!(f, "Not found error, make sure your project ID and access token credentials are correct"),
             HttpError::Server => writeln!(f, "An internal server error was encountered, if posible get in contact with a Gitlab adiminstrator"),
             HttpError::Unexpected => writeln!(f, "An unkown error was encountered, please report this issue"),
+            HttpError::BadRequest => writeln!(f, "Bad request, your request arguments may be invalid"),
         }
     }
 }

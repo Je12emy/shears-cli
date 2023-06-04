@@ -38,7 +38,7 @@ fn main() -> Result<()> {
     }
 
     for project in projects {
-        let create_branch_arguments = gitlab::CreateBranch {
+        let create_branch_arguments = gitlab::CreateBranchArgs {
             gitlab_url: &gitlab_url,
             project_id: &project.project_id,
             branch: &new_branch_name,
@@ -72,24 +72,24 @@ fn main() -> Result<()> {
             }
         }
 
-        let create_pr_arguments = gitlab::CreatePR {
+        let create_mr_arguments = gitlab::CreateMergeRequestArgs {
             gitlab_url: &gitlab_url,
             project_id: &project.project_id,
             source_branch: &new_branch_name,
             target_branch: &project.target_branch,
             title: &new_pr_title,
         };
-        let create_pr_response =
-            gitlab::create_pr(&client, &create_pr_arguments).with_context(|| {
+        let create_mr_response = gitlab::create_merge_request(&client, &create_mr_arguments)
+            .with_context(|| {
                 format!(
                     "An error ocurred while processing your request to create a merge request: {}",
                     new_pr_title
                 )
             })?;
-        util::handle_response_status(create_pr_response.status())?;
-        let new_pr: MergeRequest = create_pr_response.json()?;
+        util::handle_response_status(create_mr_response.status())?;
+        let new_pr: MergeRequest = create_mr_response.json()?;
         println!(
-            "New pull request for branch: \"{}\" created!",
+            "New merge request for branch: \"{}\" created!",
             new_branch.name
         );
         println!("URL: {}", new_pr.web_url);
