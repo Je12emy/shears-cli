@@ -1,91 +1,15 @@
 use anyhow::{Context, Result};
-use std::{
-    error::Error,
-    fmt::Display,
-    io::{self, Write},
-};
+use reqwest::header::{self, HeaderValue};
+use std::io::{self, Write};
 
-pub mod args;
+pub mod cli;
 pub mod gitlab;
 pub mod util;
 
-use reqwest::{
-    header::{self, HeaderValue, InvalidHeaderValue},
-    Error as ReqwestError,
-};
-
 use crate::gitlab::{Branch, MergeRequest};
 
-#[derive(Debug)]
-pub enum ShearsError {
-    PrivateTokenError(InvalidHeaderValue),
-    HTTPClientBuilderError(ReqwestError),
-    HTTPError(HttpError),
-    RequestError(ReqwestError),
-}
-
-#[derive(Debug)]
-pub enum HttpError {
-    Auth,
-    NotFound,
-    Server,
-    Unexpected,
-}
-
-impl Error for HttpError {}
-impl Error for ShearsError {}
-
-impl Display for HttpError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            HttpError::Auth => writeln!(f, "An authentication error was encountered, please ensure your access token is correct"),
-            HttpError::NotFound => writeln!(f, "Not found error, make sure your project ID and access token credentials are correct"),
-            HttpError::Server => writeln!(f, "An internal server error was encountered, if posible get in contact with a Gitlab adiminstrator"),
-            HttpError::Unexpected => writeln!(f, "An unkown error was encountered, please report this issue"),
-        }
-    }
-}
-
-impl Display for ShearsError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::PrivateTokenError(_) => writeln!(
-                f,
-                "You may have passed an invalid non-visible character like new line: \"\\n\""
-            ),
-            Self::HTTPClientBuilderError(_) => {
-                writeln!(f, "An error ocurred while building the HTTP client.")
-            }
-            Self::HTTPError(kind) => writeln!(f, "{}", kind),
-            Self::RequestError(kind) => writeln!(
-                f,
-                "An error ocurred while processing your request, {}",
-                kind
-            ),
-        }
-    }
-}
-
-impl std::convert::From<InvalidHeaderValue> for ShearsError {
-    fn from(value: InvalidHeaderValue) -> Self {
-        Self::PrivateTokenError(value)
-    }
-}
-
-impl std::convert::From<ReqwestError> for ShearsError {
-    fn from(value: ReqwestError) -> Self {
-        if value.is_builder() {
-            return Self::HTTPClientBuilderError(value);
-        }
-        if value.is_request() {
-            return Self::RequestError(value);
-        }
-        todo!()
-    }
-}
-
 fn main() -> Result<()> {
-    let args::Config {
+    let cli::Config {
         private_token,
         projects,
         gitlab_url,
