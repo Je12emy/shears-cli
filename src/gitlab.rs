@@ -21,7 +21,7 @@ pub struct MergeRequest {
 }
 
 #[derive(Debug, Clone)]
-pub struct CreateBranch<'a> {
+pub struct CreateBranchArgs<'a> {
     pub gitlab_url: &'a str,
     pub project_id: &'a str,
     pub branch: &'a str,
@@ -29,7 +29,7 @@ pub struct CreateBranch<'a> {
 }
 
 #[derive(Debug, Clone)]
-pub struct CreatePR<'a> {
+pub struct CreateMergeRequestArgs<'a> {
     pub gitlab_url: &'a str,
     pub project_id: &'a str,
     pub source_branch: &'a str,
@@ -37,7 +37,10 @@ pub struct CreatePR<'a> {
     pub title: &'a str,
 }
 
-pub fn create_pr(client: &Client, args: &CreatePR) -> Result<reqwest::blocking::Response, Error> {
+pub fn create_merge_request(
+    client: &Client,
+    args: &CreateMergeRequestArgs,
+) -> Result<reqwest::blocking::Response, Error> {
     let create_pr_endpoint = format!(
         "{}/api/v4/projects/{}/merge_requests?source_branch={}&target_branch={}&title={}",
         args.gitlab_url, args.project_id, args.source_branch, args.target_branch, args.title
@@ -47,7 +50,7 @@ pub fn create_pr(client: &Client, args: &CreatePR) -> Result<reqwest::blocking::
 
 pub fn create_branch(
     client: &Client,
-    args: &CreateBranch,
+    args: &CreateBranchArgs,
 ) -> Result<reqwest::blocking::Response, Error> {
     let create_branch_endpoint = format!(
         "{}/api/v4/projects/{}/repository/branches?branch={}&ref={}",
