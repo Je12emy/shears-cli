@@ -1,66 +1,22 @@
 use std::fs;
 
-use crate::{args, gitlab};
+use crate::{args, HttpRequestError, ShearsError};
 use clap::Parser;
 use directories::ProjectDirs;
-use reqwest::{blocking::Response, StatusCode};
-use serde::de::DeserializeOwned;
+use reqwest::StatusCode;
 
-pub fn handle_response_status<T>(status: StatusCode, resource: String, response: Response) -> T
-where
-    T: DeserializeOwned,
-{
+pub fn handle_response_status(status: StatusCode) -> Result<(), ShearsError> {
     match status {
-        StatusCode::OK => parse_response::<T>(response, resource),
-        StatusCode::CREATED => parse_response::<T>(response, resource),
-        StatusCode::UNAUTHORIZED => {
-            panic!("Unauthorized, please make sure your personal access token is correct!")
-        }
-        StatusCode::NOT_FOUND => {
-            let json_response = response.json::<gitlab::GitlabError>().expect(
-                format!(
-                    "An unkown error happened while creating your new {}!",
-                    resource
-                )
-                .as_str(),
-            );
-            panic!("Not Found error: {}", json_response.message)
-        }
-        StatusCode::BAD_REQUEST => {
-            let json_response = response.json::<gitlab::GitlabError>().expect(
-                format!(
-                    "An unkown error happened while creating your new {}!",
-                    resource
-                )
-                .as_str(),
-            );
-            panic!(
-                "A validation error ocurred while creating your new {}: {}",
-                resource, json_response.message
-            );
-        }
+        StatusCode::OK => Ok(()),
+        StatusCode::CREATED => Ok(()),
+        StatusCode::UNAUTHORIZED => Err(ShearsError::HTTPRequestError(HttpRequestError::Auth)),
+        StatusCode::NOT_FOUND => Err(ShearsError::HTTPRequestError(HttpRequestError::NotFound)),
+        StatusCode::BAD_REQUEST => Err(ShearsError::HTTPRequestError(HttpRequestError::Unexpected)),
         StatusCode::INTERNAL_SERVER_ERROR => {
-            panic!("Internal server error, please contact Gitlab if you see this");
+            Err(ShearsError::HTTPRequestError(HttpRequestError::Server))
         }
-        _ => panic!(
-            "An unexpected error ocurred while creating your {}",
-            resource
-        ),
+        _ => Err(ShearsError::HTTPRequestError(HttpRequestError::Unexpected)),
     }
-}
-
-fn parse_response<T>(response: Response, resource: String) -> T
-where
-    T: DeserializeOwned,
-{
-    let new_entity = response.json::<T>().expect(
-        format!(
-            "An error ocurred while reading the response to create a {}",
-            resource
-        )
-        .as_str(),
-    );
-    return new_entity;
 }
 
 pub fn build_config() -> args::Config {
