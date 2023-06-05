@@ -30,6 +30,10 @@ fn main() -> Result<()> {
         let _ = io::stdout().flush();
         match io::stdin().read_line(&mut new_branch_name) {
             Ok(_) => {
+                if new_branch_name.trim().is_empty() {
+                    eprintln!("You new branch's name should not be empty");
+                    continue;
+                }
                 new_branch_name = new_branch_name.trim().replace(' ', "-");
                 break;
             }
@@ -67,7 +71,13 @@ fn main() -> Result<()> {
             print!("Please enter a branch name: ");
             let _ = io::stdout().flush();
             match io::stdin().read_line(&mut new_pr_title) {
-                Ok(_) => break,
+                Ok(_) => {
+                    if new_pr_title.trim().is_empty() {
+                        eprintln!("New merge request's name should not be empty!");
+                        continue;
+                    }
+                    break;
+                }
                 Err(_) => eprintln!("Unable to read your branch name, please try again!"),
             }
         }
