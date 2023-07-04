@@ -23,6 +23,7 @@ pub struct Cli {
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct Project {
+    pub name: String,
     pub project_id: String,
     pub base_branch: String,
     pub target_branch: String,

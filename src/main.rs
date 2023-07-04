@@ -14,7 +14,6 @@ fn main() -> Result<()> {
         projects,
         gitlab_url,
     } = util::build_config();
-
     let private_token_header = HeaderValue::from_str(&private_token)?;
 
     let mut headers = header::HeaderMap::new();
@@ -31,7 +30,7 @@ fn main() -> Result<()> {
         match io::stdin().read_line(&mut new_branch_name) {
             Ok(_) => {
                 if new_branch_name.trim().is_empty() {
-                    eprintln!("You new branch's name should not be empty");
+                    eprintln!("Your new branch's name should not be empty");
                     continue;
                 }
                 new_branch_name = new_branch_name.trim().replace(' ', "-");
@@ -60,15 +59,9 @@ fn main() -> Result<()> {
         println!("New branch {} created!", new_branch.name);
         println!("URL: {}", new_branch.web_url);
 
-        print!(
-            "Please enter a PR title for branch \"{}\": ",
-            new_branch.name,
-        );
-        let _ = io::stdout().flush();
-
         let mut new_pr_title = String::new();
         loop {
-            print!("Please enter a branch name: ");
+            print!("Please enter a merge request name: ");
             let _ = io::stdout().flush();
             match io::stdin().read_line(&mut new_pr_title) {
                 Ok(_) => {
