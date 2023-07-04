@@ -1,9 +1,10 @@
 use std::fs;
 
-use crate::cli::{self, CliError, HttpError};
+use crate::cli::{self, CliError, HttpError, Project};
 use anyhow::Result;
 use clap::Parser;
 use directories::ProjectDirs;
+use picker::Picker;
 use reqwest::StatusCode;
 
 pub fn handle_response_status(status: StatusCode) -> Result<(), CliError> {
@@ -19,7 +20,7 @@ pub fn handle_response_status(status: StatusCode) -> Result<(), CliError> {
 }
 
 pub fn build_config() -> cli::Config {
-    let config: cli::Config;
+    let mut config: cli::Config;
     let user_passed_arguments = std::env::args().count() > 1;
 
     if user_passed_arguments {
@@ -28,6 +29,7 @@ pub fn build_config() -> cli::Config {
             private_token: cli.private_token,
             gitlab_url: cli.gitlab_url.clone(),
             projects: vec![cli::Project {
+                name: String::from(""),
                 project_id: cli.project_id,
                 base_branch: cli.base_branch,
                 target_branch: cli.target_branch,
@@ -44,5 +46,18 @@ pub fn build_config() -> cli::Config {
     config = toml::from_str(&config_file).expect(
         "Unable to read config.toml, please make sure you have a valid configuration file syntax",
     );
+
+    let options: Vec<&str> = config.projects.iter().map(|x| x.name.as_str()).collect();
+    let mut picker = Picker::new(&options);
+    picker.select();
+    if let Some(selected) = picker.selected_options_indexes {
+        let mut remaining_projects: Vec<Project> = Vec::new();
+        for (index, project) in config.projects.into_iter().enumerate() {
+            if selected.contains(&index) {
+                remaining_projects.push(project);
+            }
+        }
+        config.projects = remaining_projects;
+    }
     config
 }
