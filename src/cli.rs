@@ -1,5 +1,7 @@
 use clap::{Args, Parser, Subcommand};
 
+pub const INVALID_TOKEN_DEFAULT_VALUE: &str = "INVALID";
+
 #[derive(Debug, Parser)]
 #[clap(author, version, about)]
 pub struct CmdArgs {
@@ -36,7 +38,7 @@ pub struct Source {
     )]
     pub gitlab_url: String,
     /// Personal access token
-    #[arg(global = true, default_value = "INVALID", short, long, required = true)]
+    #[arg(global = true, default_value = INVALID_TOKEN_DEFAULT_VALUE, short, long)]
     pub access_token: String,
 }
 
