@@ -8,13 +8,13 @@ pub struct GitlabError {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct Branch {
+pub struct CreatedBranchResponse {
     pub name: String,
     pub web_url: String,
 }
 
 #[derive(Debug, Deserialize, Clone)]
-pub struct MergeRequest {
+pub struct CreatedMergeRequestResponse {
     pub source_branch: String,
     pub target_branch: String,
     pub web_url: String,
@@ -31,7 +31,7 @@ pub struct CreateBranchArgs<'a> {
 #[derive(Debug, Clone)]
 pub struct CreateMergeRequestArgs<'a> {
     pub gitlab_url: &'a str,
-    pub project_id: &'a str,
+    pub project_id: &'a u32,
     pub source_branch: &'a str,
     pub target_branch: &'a str,
     pub title: &'a str,
