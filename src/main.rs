@@ -3,8 +3,6 @@ use clap::{CommandFactory, Parser};
 use gitlab::CreatedBranchResponse;
 use reqwest::header::{self, HeaderValue};
 
-use crate::gitlab::CreatedMergeRequestResponse;
-
 pub mod cli;
 pub mod gitlab;
 
@@ -68,7 +66,7 @@ fn main() -> Result<()> {
                     };
                     let res = gitlab::create_merge_request(&client, &payload)?;
                     if res.status().is_success() {
-                        let created_merge_request: CreatedMergeRequestResponse = res.json()?;
+                        let created_merge_request: gitlab::CreatedMergeRequestResponse = res.json()?;
                         println!("{}", created_merge_request.web_url)
                     }
                 }
