@@ -23,7 +23,7 @@ pub struct MergeRequest {
 #[derive(Debug, Clone)]
 pub struct CreateBranchArgs<'a> {
     pub gitlab_url: &'a str,
-    pub project_id: &'a str,
+    pub project_id: &'a u32,
     pub branch: &'a str,
     pub source_branch: &'a str,
 }

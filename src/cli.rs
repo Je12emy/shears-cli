@@ -75,5 +75,5 @@ pub struct MergeRequest {
 pub struct Project {
     /// Project ID
     #[arg(short, long)]
-    pub id: String,
+    pub id: u32,
 }
