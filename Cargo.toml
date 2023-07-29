@@ -1,5 +1,5 @@
 [package]
-name = "branch-cut"
+name = "shears"
 version = "0.1.0"
 edition = "2021"
 
@@ -9,7 +9,7 @@ edition = "2021"
 directories = "5.0.0"
 serde = { version = "1.0.160" , features = ["derive"]}
 toml = "0.7.3"
-clap = { version = "4.3.0", features = ["derive"]}
+clap = { version = "4.3.19", features = ["derive"]}
 reqwest = { version = "0.11.18", features = ["blocking", "json"] }
 serde_json = "1.0.96"
 anyhow = "1.0.71"
