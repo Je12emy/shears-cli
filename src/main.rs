@@ -45,9 +45,35 @@ fn main() -> Result<()> {
                         project_id: &project.id,
                     };
                     let res = gitlab::create_branch(&client, &payload)?;
-                    if res.status().is_success() {
-                        let created_branch: CreatedBranchResponse = res.json()?;
-                        println!("{}", created_branch.web_url)
+                    match res.status() {
+                        StatusCode::CREATED => {
+                            let created_branch: CreatedBranchResponse = res.json()?;
+                            println!("{}", created_branch.web_url)
+                        }
+                        StatusCode::BAD_REQUEST => {
+                            let error: ValidationErrorResponse = res.json()?;
+                            cmd.error(
+                                ErrorKind::InvalidValue,
+                                error.message
+                            )
+                            .exit();
+                        },
+                        StatusCode::UNAUTHORIZED => cmd.error(
+                                ErrorKind::InvalidValue,
+                                "An invalid token has been provided"
+                            ).exit(),
+                        StatusCode::FORBIDDEN => cmd.error(
+                                ErrorKind::InvalidValue,
+                                 "You are not allowed to perform this operation, please check your API permissions"
+                            ).exit(),
+                        StatusCode::NOT_FOUND => cmd.error(
+                                ErrorKind::InvalidValue,
+                                "Make sure the provided values exist"
+                            ).exit(),
+                        _ => cmd.error(
+                             ErrorKind::InvalidValue,
+                             "An error has ocurred while creating your new branch"
+                            ).exit(),
                     }
                 }
                 cli::CreateSubCommand::MergeRequest(create_merge_request_cmd) => {
