@@ -3,7 +3,7 @@ use reqwest::{blocking::Client, Error};
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
-pub struct GitlabError {
+pub struct ValidationErrorResponse {
     pub message: String,
 }
 

@@ -1,13 +1,16 @@
 use anyhow::Result;
-use clap::{CommandFactory, Parser};
-use gitlab::CreatedBranchResponse;
+use clap::{error::ErrorKind, CommandFactory, Parser};
 use reqwest::header::{self, HeaderValue};
+
+use crate::http::ResponseHandlerError;
 
 pub mod cli;
 pub mod gitlab;
+pub mod http;
 
 fn main() -> Result<()> {
     let args = cli::CmdArgs::parse();
+    let mut cmd = cli::CmdArgs::command();
     match args.action {
         cli::ActionSubcommand::Create(create_cmd) => {
             if args
@@ -15,9 +18,8 @@ fn main() -> Result<()> {
                 .access_token
                 .eq(cli::INVALID_TOKEN_DEFAULT_VALUE)
             {
-                let mut cmd = cli::CmdArgs::command();
                 cmd.error(
-                    clap::error::ErrorKind::InvalidValue,
+                    ErrorKind::InvalidValue,
                     "Please provide a valid value for access token",
                 )
                 .exit();
@@ -45,36 +47,18 @@ fn main() -> Result<()> {
                         project_id: &project.id,
                     };
                     let res = gitlab::create_branch(&client, &payload)?;
-                    match res.status() {
-                        StatusCode::CREATED => {
-                            let created_branch: CreatedBranchResponse = res.json()?;
-                            println!("{}", created_branch.web_url)
+                    let created_branch = http::handle_response::<gitlab::CreatedBranchResponse>(
+                        res,
+                        cmd,
+                        http::Resource::Branch,
+                    )
+                    .map_err(|err| {
+                        if let ResponseHandlerError::NotOk(cmd_error) = err {
+                            cmd_error.exit()
                         }
-                        StatusCode::BAD_REQUEST => {
-                            let error: ValidationErrorResponse = res.json()?;
-                            cmd.error(
-                                ErrorKind::InvalidValue,
-                                error.message
-                            )
-                            .exit();
-                        },
-                        StatusCode::UNAUTHORIZED => cmd.error(
-                                ErrorKind::InvalidValue,
-                                "An invalid token has been provided"
-                            ).exit(),
-                        StatusCode::FORBIDDEN => cmd.error(
-                                ErrorKind::InvalidValue,
-                                 "You are not allowed to perform this operation, please check your API permissions"
-                            ).exit(),
-                        StatusCode::NOT_FOUND => cmd.error(
-                                ErrorKind::InvalidValue,
-                                "Make sure the provided values exist"
-                            ).exit(),
-                        _ => cmd.error(
-                             ErrorKind::InvalidValue,
-                             "An error has ocurred while creating your new branch"
-                            ).exit(),
-                    }
+                        err
+                    })?;
+                    println!("{}", created_branch.web_url);
                 }
                 cli::CreateSubCommand::MergeRequest(create_merge_request_cmd) => {
                     let cli::MergeRequest {
@@ -91,10 +75,18 @@ fn main() -> Result<()> {
                         target_branch: target.as_str(),
                     };
                     let res = gitlab::create_merge_request(&client, &payload)?;
-                    if res.status().is_success() {
-                        let created_merge_request: gitlab::CreatedMergeRequestResponse = res.json()?;
-                        println!("{}", created_merge_request.web_url)
-                    }
+                    let created_merge_request = http::handle_response::<
+                        gitlab::CreatedMergeRequestResponse,
+                    >(
+                        res, cmd, http::Resource::Branch
+                    )
+                    .map_err(|err| {
+                        if let ResponseHandlerError::NotOk(cmd_error) = err {
+                            cmd_error.exit()
+                        }
+                        err
+                    })?;
+                    println!("{}", created_merge_request.web_url);
                 }
             }
         }
