@@ -10,77 +10,7 @@ You need to Gitlab private access token to interact with the Gitlab Rest API, yo
 
 ## Usage
 
-You can either use the shears CLI as a standalone CLI app or through a configuration file written in [TOML](https://toml.io/en/).
-
-## As a Standalone CLI
-
-Simply invoke the CLI and pass the following arguments.
-
-| Name          | Description                                                                                                                                                                                     | Short Form | Long Form |
-| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
-| Private Token | Personal access token used for authentication with Gitlab                                                                                                                                       | t          | token     |
-| Project ID    | Your repository's ID, you may need write permissions on it. You may retrieve this ID on your [project's settings page](https://docs.gitlab.com/ee/user/project/settings/#view-project-settings) | i          | id        |
-| Source Branch | The base branch used for creating the new release branch, when creating a PR this branch will be merged into the target branch                                                                  | s          | source    |
-| Target Branch | The target branch for the new release pull request                                                                                                                                              | t          | target    |
-| Gitlab URL (Optional)    | The Gitlab URL, by default https://gitlab.com is used. If you are hosting your own Gitlab instance you will need to pass this argument                                                          | u          | url       |
-
-Here's an example:
-
-```bash
-$ shears-cli -t glpat-xxxxxxxxxxxxxxxxxxxx -i 11111111 -s develop -d main
-
-Please enter a branch name: release/1.1.2
-New branch release/1.1.2 created!
-URL: https://gitlab.com/Je12emy/test_project/-/tree/release/1.1.2
-Please enter a PR title for branch "release/1.1.2": latest 1.1.2 release
-New pull request for branch: "release/1.1.2" created!
-URL: https://gitlab.com/Je12emy/test_project/-/merge_requests/13
-```
-
-Notice that you are asked for a branch name and a title for your PR.
-
-## Using a  configuration file
-
-If you don't want to use the same command multiple times, don't want to type that many arguments or even better, you want to cut multiple release branches, then this is a great alternative. You will need a configuration file named: "config.toml" written in TOML, with the settings we discussed earlier. This configuration file should be placed in the following directories depending on your OS.
-
-| OS      | Path                                                          |
-| ------- | ------------------------------------------------------------- |
-| Linux   | /home/user/.config/shears-cli                                 |
-| Windows | C:\Users\user\AppData\Roaming\je12emy\shears-cli              |
-| MacOs   | /Users/user/Library/Application Support/com.je12emy.shears-cli|
-
-Here's a sample configuration file.
-
-```TOML
-private_token = "foo"
-gitlab_url = "https://gitlab.com"
-
-[[projects]]
-project_id = "1111111"
-base_branch = "develop"
-target_branch = "main"
-
-[[projects]]
-project_id = "2222222"
-base_branch = "develop"
-target_branch = "main"
-```
-
-Here the `projects` key allows you to set-up many repositories, shears will then create a branch and submit a PR for you on each project.
-
-With this set-up you can simply call shears, and the configuration file will be read. Here's an example:
-
-```bash
-$ shears-cli
-Please enter a branch name: release/1.2.3
-New branch release/1.2.3 created!
-URL: https://gitlab.com/Je12emy/test_project/-/tree/release/1.2.3
-Please enter a PR title for branch "release/1.2.3": latest 1.2.3 release
-New pull request for branch: "release/1.2.3" created!
-URL: https://gitlab.com/Je12emy/test_project/-/merge_requests/14
-```
-
-# Installation
+As a CLI application you can check out the help documentation with the `-h` flag.
 
 ## Pre build Binaries
 
@@ -88,7 +18,7 @@ Check the [releases](https://github.com/Je12emy/shears-cli/releases) page and do
 
 ## Building from Source
 
-This CLI is built using [rust](https://www.rust-lang.org/), so you can build and run it using cargo.
+This CLI is built using [rust](https://www.rust-lang.org/), so you can build, run and install it using cargo.
 
 # Contributing
 

@@ -1,102 +1,95 @@
-use anyhow::{Context, Result};
+use anyhow::Result;
+use clap::{error::ErrorKind, CommandFactory, Parser};
 use reqwest::header::{self, HeaderValue};
-use std::io::{self, Write};
+
+use crate::http::ResponseHandlerError;
 
 pub mod cli;
 pub mod gitlab;
-pub mod util;
-
-use crate::gitlab::{Branch, MergeRequest};
+pub mod http;
 
 fn main() -> Result<()> {
-    let cli::Config {
-        private_token,
-        projects,
-        gitlab_url,
-    } = util::build_config();
-    let private_token_header = HeaderValue::from_str(&private_token)?;
-
-    let mut headers = header::HeaderMap::new();
-    headers.insert("PRIVATE-TOKEN", private_token_header);
-
-    let client = reqwest::blocking::Client::builder()
-        .default_headers(headers)
-        .build()?;
-
-    let mut new_branch_name = String::new();
-    loop {
-        print!("Please enter a branch name: ");
-        let _ = io::stdout().flush();
-        match io::stdin().read_line(&mut new_branch_name) {
-            Ok(_) => {
-                if new_branch_name.trim().is_empty() {
-                    eprintln!("Your new branch's name should not be empty");
-                    continue;
-                }
-                new_branch_name = new_branch_name.trim().replace(' ', "-");
-                break;
+    let args = cli::CmdArgs::parse();
+    let mut cmd = cli::CmdArgs::command();
+    match args.action {
+        cli::ActionSubcommand::Create(create_cmd) => {
+            if args
+                .source
+                .access_token
+                .eq(cli::INVALID_TOKEN_DEFAULT_VALUE)
+            {
+                cmd.error(
+                    ErrorKind::InvalidValue,
+                    "Please provide a valid value for access token",
+                )
+                .exit();
             }
-            Err(_) => eprintln!("Unable to read your branch name, please try again!"),
+            let private_token_header = HeaderValue::from_str(&args.source.access_token)?;
+
+            let mut headers = header::HeaderMap::new();
+            headers.insert("PRIVATE-TOKEN", private_token_header);
+
+            let client = reqwest::blocking::Client::builder()
+                .default_headers(headers)
+                .build()?;
+
+            match create_cmd {
+                cli::CreateSubCommand::Branch(create_branch_cmd) => {
+                    let cli::Branch {
+                        base,
+                        name,
+                        project,
+                    } = create_branch_cmd;
+                    let payload = gitlab::CreateBranchArgs {
+                        branch: name.as_str(),
+                        source_branch: base.as_str(),
+                        gitlab_url: args.source.gitlab_url.as_str(),
+                        project_id: &project.id,
+                    };
+                    let res = gitlab::create_branch(&client, &payload)?;
+                    let created_branch = http::handle_response::<gitlab::CreatedBranchResponse>(
+                        res,
+                        cmd,
+                        http::Resource::Branch,
+                    )
+                    .map_err(|err| {
+                        if let ResponseHandlerError::NotOk(cmd_error) = err {
+                            cmd_error.exit()
+                        }
+                        err
+                    })?;
+                    println!("{}", created_branch.web_url);
+                }
+                cli::CreateSubCommand::MergeRequest(create_merge_request_cmd) => {
+                    let cli::MergeRequest {
+                        title,
+                        target,
+                        source,
+                        project,
+                    } = create_merge_request_cmd;
+                    let payload = gitlab::CreateMergeRequestArgs {
+                        title: title.as_str(),
+                        gitlab_url: args.source.gitlab_url.as_str(),
+                        project_id: &project.id,
+                        source_branch: source.as_str(),
+                        target_branch: target.as_str(),
+                    };
+                    let res = gitlab::create_merge_request(&client, &payload)?;
+                    let created_merge_request = http::handle_response::<
+                        gitlab::CreatedMergeRequestResponse,
+                    >(
+                        res, cmd, http::Resource::Branch
+                    )
+                    .map_err(|err| {
+                        if let ResponseHandlerError::NotOk(cmd_error) = err {
+                            cmd_error.exit()
+                        }
+                        err
+                    })?;
+                    println!("{}", created_merge_request.web_url);
+                }
+            }
         }
     }
-
-    for project in projects {
-        let create_branch_arguments = gitlab::CreateBranchArgs {
-            gitlab_url: &gitlab_url,
-            project_id: &project.project_id,
-            branch: &new_branch_name,
-            source_branch: &project.base_branch,
-        };
-        let create_branch_response = gitlab::create_branch(&client, &create_branch_arguments)
-            .with_context(|| {
-                format!(
-                    "An error ocurred while processing your request to create the branch \"{}\"",
-                    &new_branch_name
-                )
-            })?;
-        util::handle_response_status(create_branch_response.status())?;
-        let new_branch: Branch = create_branch_response.json()?;
-        println!("New branch {} created!", new_branch.name);
-        println!("URL: {}", new_branch.web_url);
-
-        let mut new_pr_title = String::new();
-        loop {
-            print!("Please enter a merge request name: ");
-            let _ = io::stdout().flush();
-            match io::stdin().read_line(&mut new_pr_title) {
-                Ok(_) => {
-                    if new_pr_title.trim().is_empty() {
-                        eprintln!("New merge request's name should not be empty!");
-                        continue;
-                    }
-                    break;
-                }
-                Err(_) => eprintln!("Unable to read your branch name, please try again!"),
-            }
-        }
-
-        let create_mr_arguments = gitlab::CreateMergeRequestArgs {
-            gitlab_url: &gitlab_url,
-            project_id: &project.project_id,
-            source_branch: &new_branch_name,
-            target_branch: &project.target_branch,
-            title: &new_pr_title,
-        };
-        let create_mr_response = gitlab::create_merge_request(&client, &create_mr_arguments)
-            .with_context(|| {
-                format!(
-                    "An error ocurred while processing your request to create a merge request: {}",
-                    new_pr_title
-                )
-            })?;
-        util::handle_response_status(create_mr_response.status())?;
-        let new_pr: MergeRequest = create_mr_response.json()?;
-        println!(
-            "New merge request for branch: \"{}\" created!",
-            new_branch.name
-        );
-        println!("URL: {}", new_pr.web_url);
-    }
-
     Ok(())
 }
